@@ -189,13 +189,12 @@ generateTriangles()
             this.fBuffer.push(oneDArrVal + 1);
             this.fBuffer.push(oneDArrVal + this.div + 1);
             //reverse of previous triangles so that each square in generated plane is divided into two triangles
-            this.fBuffer.push(oneDArrVal+1);
+            this.fBuffer.push(oneDArrVal + 1);
             this.fBuffer.push(oneDArrVal + 1 + this.div + 1);
             this.fBuffer.push(oneDArrVal + this.div + 1);
         }
     }
     
-    //
     
     this.numFaces = this.fBuffer.length/3;
     this.updateNormals();
@@ -207,17 +206,17 @@ generateTriangles()
  */
 faultLineCheck() {
     // number of iterations of partitioning
-    var iter = 150;
+    var iter = 200;
     // number by which to increase or decrease the height by
-    var delta = 0.0075;
+    var delta = 0.0045;
    
     
-    for (int i = 0; i < iter; i++) {
-        var randPoint = [this.minX + (this.maxX - this.minX) * Math.random(),this.minY + (this.maxY - this.minY) * Math.random()];
+    for (var i = 0; i < iter; i++) {
+        var randPoint = [this.minX + ((this.maxX - this.minX) * Math.random()),this.minY + ((this.maxY - this.minY) * Math.random())];
         var randNormal = glMatrix.vec2.create();
         glMatrix.vec2.random(randNormal);
         
-        for (int x = 0; x < this.numVertices; x++) {
+        for (var x = 0; x < this.numVertices; x++) {
             var b = [this.vBuffer[x*3], this.vBuffer[x*3+1]];
             if ((b[0] - randPoint[0]) * randNormal[0] + (b[1] - randPoint[1]) * randNormal[1] > 0) {
                 this.vBuffer[x * 3 + 2] += delta;
@@ -233,7 +232,7 @@ faultLineCheck() {
  * Update normals for after fault line check is done for use in shading model
  */
 updateNormals() {
-    for (var i = 0; i < this.numFaces) {
+    for (var i = 0; i < this.numFaces; i++) {
         var face1 = this.fBuffer[i * 3];
         var face2 = this.fBuffer[i * 3 + 1];
         var face3 = this.fBuffer[i * 3 + 2];
@@ -258,12 +257,13 @@ updateNormals() {
         
         //Add normal to normal coordinates
         glMatrix.vec3.add(normA, normA, norm);
-        glMatrix.vec3.add(normA, normB, norm);
-        glMatrix.vec3.add(normA, normC, norm);
+        glMatrix.vec3.add(normB, normB, norm);
+        glMatrix.vec3.add(normC, normC, norm);
         // And update the values in the normal buffer to the newly described normal vectors
         [this.nBuffer[face1 * 3], this.nBuffer[face1 * 3 + 1], this.nBuffer[face1 * 3 + 2]] = normA;
         [this.nBuffer[face2 * 3], this.nBuffer[face2 * 3 + 1], this.nBuffer[face2 * 3 + 2]] = normB;
         [this.nBuffer[face3 * 3], this.nBuffer[face3 * 3 + 1], this.nBuffer[face3 * 3 + 2]] = normC;
+    }
         
         //Finally, we normalize the vector to make it unit length
         for (var x = 0; x < this.numVertices; x++) {
@@ -271,7 +271,6 @@ updateNormals() {
             glMatrix.vec3.normalize(norm, norm);
             [this.nBuffer[x*3], this.nBuffer[x*3+1], this.nBuffer[x*3+2]] = norm;
         }
-    }
 }
     
 /**
