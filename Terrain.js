@@ -242,16 +242,17 @@ updateNormals() {
         var vecB = [this.vBuffer[face2 * 3], this.vBuffer[face2 * 3 + 1], this.vBuffer[face2 * 3 + 2]];
         var vecC = [this.vBuffer[face3 * 3], this.vBuffer[face3 * 3 + 1], this.vBuffer[face3 * 3 + 2]];
         //stores normal coordinates to add
-        var normA = [this.vBuffer[face1 * 3], this.vBuffer[face1 * 3 + 1], this.vBuffer[face1 * 3 + 2]];
-        var normB = [this.vBuffer[face2 * 3], this.vBuffer[face2 * 3 + 1], this.vBuffer[face2 * 3 + 2]];
-        var normC = [this.vBuffer[face3 * 3], this.vBuffer[face3 * 3 + 1], this.vBuffer[face3 * 3 + 2]];
+        var normA = [this.nBuffer[face1 * 3], this.nBuffer[face1 * 3 + 1], this.nBuffer[face1 * 3 + 2]];
+        var normB = [this.nBuffer[face2 * 3], this.nBuffer[face2 * 3 + 1], this.nBuffer[face2 * 3 + 2]];
+        var normC = [this.nBuffer[face3 * 3], this.nBuffer[face3 * 3 + 1], this.nBuffer[face3 * 3 + 2]];
         
         //create new vectors from vector coordinates
         var dir1 = glMatrix.vec3.create();
-        var dir2 = glMatrix.vec3.create();
-        var norm = glMatrix.vec3.create();
         glMatrix.vec3.sub(dir1, vecB, vecA);
+        var dir2 = glMatrix.vec3.create();
         glMatrix.vec3.sub(dir2, vecC, vecA);
+        var norm = glMatrix.vec3.create();
+        
         //create normal vector by taking cross product of face vectors
         glMatrix.vec3.cross(norm, dir1,dir2);
         
