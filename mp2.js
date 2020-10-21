@@ -34,9 +34,9 @@ var myTerrain;
 
 // View parameters
 /** @global Location of the camera in world coordinates */
-var eyePt = glMatrix.vec3.fromValues(0.0,0.0,0.0);
+var eyePt = glMatrix.vec3.fromValues(0.0,0.6,0.0);
 /** @global Direction of the view in world coordinates */
-var viewDir = glMatrix.vec3.fromValues(0.0,0.0,-1.0);
+var viewDir = glMatrix.vec3.fromValues(0.0,-0.5,-1.0);
 /** @global Up vector for view matrix creation, in world coordinates */
 var up = glMatrix.vec3.fromValues(0.0,1.0,0.0);
 /** @global Location of a point along viewDir in world coordinates */
@@ -210,6 +210,9 @@ function setupShaders() {
   shaderProgram.uniformAmbientMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKAmbient");  
   shaderProgram.uniformDiffuseMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKDiffuse");
   shaderProgram.uniformSpecularMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKSpecular");
+  // adding min and max z uniforms
+  shaderProgram.uniformMaxZ = gl.getUniformLocation(shaderProgram, "maxZ");
+  shaderProgram.uniformMinZ = gl.getUniformLocation(shaderProgram, "minZ");
 }
 
 //-------------------------------------------------------------------------
@@ -240,6 +243,18 @@ function setLightUniforms(loc,a,d,s) {
   gl.uniform3fv(shaderProgram.uniformAmbientLightColorLoc, a);
   gl.uniform3fv(shaderProgram.uniformDiffuseLightColorLoc, d);
   gl.uniform3fv(shaderProgram.uniformSpecularLightColorLoc, s);
+}
+
+//-------------------------------------------------------------------------
+/**
+ * Sends Z values to shader
+ * @param {Float32} maxZ
+ * @param {Float32} minZ
+ */
+
+function setupZUniforms(maxZ, minZ) {
+    gl.uniform1f(shaderProgram.uniformMaxZ, maxZ);
+    gl.uniform1f(shaderProgram.uniformMinZ, minZ);
 }
 
 //----------------------------------------------------------------------------------
@@ -278,6 +293,8 @@ function draw() {
     glMatrix.mat4.rotateX(mvMatrix, mvMatrix, degToRad(-75));
     setMatrixUniforms();
     setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
+    // making sure new shader values are drawn in terrain
+    setupZUniforms(myTerrain.maxZ, myTerrain.minZ);
     
     if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
     { 

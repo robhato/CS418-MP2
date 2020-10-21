@@ -179,6 +179,7 @@ generateTriangles()
     
     this.numVertices = this.vBuffer.length/3;
     this.faultLineCheck();
+    this.findZ();
     
     // second nested for loop instance to generate face buffer values to specify connectivity of triangles
     for (var i = 0; i < this.div; i++) {
@@ -200,15 +201,16 @@ generateTriangles()
     this.updateNormals();
 }
     
+
     
 /**
  * Update verticies in plane to enable changes in height
  */
 faultLineCheck() {
     // number of iterations of partitioning
-    var iter = 200;
+    var iter = 1000;
     // number by which to increase or decrease the height by
-    var delta = 0.0045;
+    var delta = 0.0075;
    
     
     for (var i = 0; i < iter; i++) {
@@ -225,6 +227,22 @@ faultLineCheck() {
             }
         }
         
+    }
+}
+    
+/**
+ * Sets the location of the min and max Z coordinate in the system
+ */
+findZ() {
+    this.minZ = Infinity;
+    this.maxZ = -Infinity;
+    for (var x = 0; x < this.numVertices; x++) {
+        if (this.vBuffer[x*3+2] < this.minZ) {
+            this.minZ = this.vBuffer[x*3+2];
+        }
+        if (this.vBuffer[x*3+2] > this.maxZ) {
+            this.maxZ = this.vBuffer[x*3+2];
+        }
     }
 }
     
@@ -248,11 +266,10 @@ updateNormals() {
         
         //create new vectors from vector coordinates
         var dir1 = glMatrix.vec3.create();
-        glMatrix.vec3.sub(dir1, vecB, vecA);
         var dir2 = glMatrix.vec3.create();
-        glMatrix.vec3.sub(dir2, vecC, vecA);
         var norm = glMatrix.vec3.create();
-        
+        glMatrix.vec3.sub(dir1, vecB, vecA);
+        glMatrix.vec3.sub(dir2, vecC, vecA);
         //create normal vector by taking cross product of face vectors
         glMatrix.vec3.cross(norm, dir1,dir2);
         
@@ -260,6 +277,7 @@ updateNormals() {
         glMatrix.vec3.add(normA, normA, norm);
         glMatrix.vec3.add(normB, normB, norm);
         glMatrix.vec3.add(normC, normC, norm);
+        
         // And update the values in the normal buffer to the newly described normal vectors
         [this.nBuffer[face1 * 3], this.nBuffer[face1 * 3 + 1], this.nBuffer[face1 * 3 + 2]] = normA;
         [this.nBuffer[face2 * 3], this.nBuffer[face2 * 3 + 1], this.nBuffer[face2 * 3 + 2]] = normB;
