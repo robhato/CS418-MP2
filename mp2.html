@@ -1,7 +1,7 @@
 <!DOCTYPE HTML> 
 <html lang="en"> 
 <head>
-<title>Hello Terrain </title>
+<title>MP2-2</title>
 <meta charset="utf-8"> 
 </head>
 
@@ -56,12 +56,21 @@ uniform vec3 uKAmbient;
 uniform vec3 uKDiffuse;
 uniform vec3 uKSpecular;
 uniform float uShininess;
+uniform bool uFogOn;
 
 varying vec3 vertPos;
 varying vec3 normEye;
 varying vec3 kColor;
 
 void main(void) { 
+
+        // Fog Calculations - taken from lecture slides
+        float fogCoord = (gl_FragCoord.z / gl_FragCoord.w);
+        vec4 fogColor = vec4(1.0, 1.0, 1.0, 1.0);
+        const float LOG2 = 1.442695;
+        float fogDensity = 0.6;
+        float fogFactor = exp2(-fogDensity * fogDensity * fogCoord * fogCoord * LOG2);
+        fogFactor = clamp(fogFactor, 0.0, 1.0);
     
 
         // Calculate the vector (l) to the light source
@@ -86,9 +95,16 @@ void main(void) {
         float specularLightWeightning = pow(rdotv, uShininess);
         
         // Sum up all three reflection components and send to the fragment shader
-        gl_FragColor = vec4(((uAmbientLightColor*uKAmbient)
+        vec4 fragColor = vec4(((uAmbientLightColor*uKAmbient)
                 + (uDiffuseLightColor*kColor) * diffuseLightWeightning
                 + ((uSpecularLightColor*uKSpecular) * specularLightWeightning)),1.0);
+                
+        // check if fog check is on, if it is, enable fog in terrain
+        if (uFogOn) {
+            gl_FragColor = mix(fogColor, fragColor, fogFactor);
+        } else {
+            gl_FragColor = fragColor;
+        }
  }
 </script>
 
@@ -96,13 +112,28 @@ void main(void) {
 <script src="Terrain.js"></script>  
 <script src="mp2.js"></script>   
 <body onload="startup();">
- <canvas id="myGLCanvas" width="800" height="800"></canvas>
+ <canvas id="myGLCanvas" width="900" height="900"></canvas>
+    <form id="instructions">
+        <fieldset>
+                <legend>Instructions for Movement</legend>
+             <div>Roll: Arrow Keys Left and Right</div>
+             <div>Pitch: Arrow Keys Up and Down</div>
+             <div>Speed: = to speed up, - to slow down</div>
+        </fieldset>
+    </form>
+    </hr>
     <form id="input_form">
         <fieldset>
             <legend>Rendering Parameters</legend>
          <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
          <input type="radio" name="primitive" id="polygon" id="polygon" value="polygon" checked> Polygon
          <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges  
+        </fieldset>
+        </hr>
+        <fieldset>
+            <legend>Fog Check</legend>
+         <input type="radio" name="fog" id="fogOn" value="fogOn" checked> On
+         <input type="radio" name="fog" id="fogOff" id="fogOff" value="fogOff"> Off
         </fieldset>
         </form>
 </body>

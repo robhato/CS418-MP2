@@ -208,9 +208,9 @@ generateTriangles()
  */
 faultLineCheck() {
     // number of iterations of partitioning
-    var iter = 1000;
+    var iter = 400;
     // number by which to increase or decrease the height by
-    var delta = 0.0075;
+    var delta = 0.004;
    
     
     for (var i = 0; i < iter; i++) {

@@ -26,7 +26,7 @@ var nMatrix = glMatrix.mat3.create();
 var transformVec = glMatrix.vec3.create();    
 
 // Initialize the vector....
-glMatrix.vec3.set(transformVec,0.0,0.0,-2.0);
+glMatrix.vec3.set(transformVec,0.0,-0.25,-2.0);
 
 /** @global An object holding the geometry for a 3D terrain */
 var myTerrain;
@@ -34,9 +34,9 @@ var myTerrain;
 
 // View parameters
 /** @global Location of the camera in world coordinates */
-var eyePt = glMatrix.vec3.fromValues(0.0,0.6,0.0);
+var eyePt = glMatrix.vec3.fromValues(0.0,-0.1,-1.2);
 /** @global Direction of the view in world coordinates */
-var viewDir = glMatrix.vec3.fromValues(0.0,-0.5,-1.0);
+var viewDir = glMatrix.vec3.fromValues(0.0,-0.25,-1.0);
 /** @global Up vector for view matrix creation, in world coordinates */
 var up = glMatrix.vec3.fromValues(0.0,1.0,0.0);
 /** @global Location of a point along viewDir in world coordinates */
@@ -65,6 +65,20 @@ var shininess = 23;
 var kEdgeBlack = [0.0,0.0,0.0];
 /** @global Edge color for wireframe rendering */
 var kEdgeWhite = [1.0,1.0,1.0];
+
+//Fog Parameter
+/** Boolean defining if the fog is turned on or not (on by default) */
+var fogOn = true;
+
+//Airplane Parameters
+/** Stores currently pressed key on keyboard */
+var currentPressedKey = {};
+/** Stores rotation quaternion */
+var quatRot = glMatrix.quat.create();
+/** Stores direction in which plane is moving */
+var directionVec = glMatrix.vec3.create();
+/** Defines speed of plane */
+var speed = 0.001;
 
 
 
@@ -213,6 +227,8 @@ function setupShaders() {
   // adding min and max z uniforms
   shaderProgram.uniformMaxZ = gl.getUniformLocation(shaderProgram, "maxZ");
   shaderProgram.uniformMinZ = gl.getUniformLocation(shaderProgram, "minZ");
+  // adding FogCheck
+  shaderProgram.uniformFogLoc = gl.getUniformLocation(shaderProgram, "uFogOn");
 }
 
 //-------------------------------------------------------------------------
@@ -247,6 +263,16 @@ function setLightUniforms(loc,a,d,s) {
 
 //-------------------------------------------------------------------------
 /**
+ * Sends fog values to shader
+ * @param {Bool} fogOn
+ */
+
+function setFogOnUniform(fogOn) {
+    gl.uniform1i(shaderProgram.uniformFogLoc, fogOn);
+}
+
+//-------------------------------------------------------------------------
+/**
  * Sends Z values to shader
  * @param {Float32} maxZ
  * @param {Float32} minZ
@@ -262,7 +288,7 @@ function setupZUniforms(maxZ, minZ) {
  * Populate buffers with data
  */
 function setupBuffers() {
-    myTerrain = new Terrain(10,-0.5,0.5,-0.5,0.5);
+    myTerrain = new Terrain(300,-2.0,2.0,-2.0,2.0);
     myTerrain.loadBuffers();
 }
 
@@ -272,7 +298,7 @@ function setupBuffers() {
  */
 function draw() { 
     //console.log("function draw()")
-    var transformVec = glMatrix.vec3.create();
+    //var transformVec = glMatrix.vec3.create();
   
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -288,13 +314,15 @@ function draw() {
     glMatrix.mat4.lookAt(mvMatrix,eyePt,viewPt,up);    
  
     //Draw Terrain
-    glMatrix.vec3.set(transformVec,0.0,-0.5,-2.1);
+    //glMatrix.vec3.set(transformVec,0.0,-0.5,-2.1);
     glMatrix.mat4.translate(mvMatrix, mvMatrix,transformVec);
     glMatrix.mat4.rotateX(mvMatrix, mvMatrix, degToRad(-75));
     setMatrixUniforms();
     setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
     // making sure new shader values are drawn in terrain
     setupZUniforms(myTerrain.maxZ, myTerrain.minZ);
+    // same with fog values
+    setFogOnUniform(fogOn);
     
     if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
     { 
@@ -314,9 +342,55 @@ function draw() {
       myTerrain.drawEdges();
     }
     
-    requestAnimationFrame(draw); 
+    //requestAnimationFrame(draw); 
   
 }
+
+//----------------------------------------------------------------------------------
+/**
+ * Animation function for airplane movement
+ */
+
+function animate() {
+    var pitch = 0;
+    var roll = 0;
+    
+    if (currentPressedKey["ArrowRight"]) roll += degToRad(1);
+    if (currentPressedKey["ArrowLeft"]) roll -= degToRad(1);
+    if (currentPressedKey["ArrowUp"]) pitch -= degToRad(1);
+    if (currentPressedKey["ArrowDown"]) pitch += degToRad(1);
+    if (currentPressedKey["="]) speed += 0.001;
+    if (currentPressedKey["-"]) speed -= 0.001;
+    if (speed > 0.008) speed = 0.008;
+    if (speed < 0.0025) speed = 0.0025;
+    
+    // Pitch
+    var norm = glMatrix.vec3.create();
+    glMatrix.vec3.cross(norm, viewDir, up);
+    glMatrix.quat.setAxisAngle(quatRot, norm, pitch);
+    glMatrix.vec3.transformQuat(viewDir, viewDir, quatRot);
+    glMatrix.vec3.transformQuat(up, up, quatRot)
+    
+    // Roll
+    glMatrix.quat.setAxisAngle(quatRot, viewDir, roll);
+    glMatrix.vec3.transformQuat(viewDir, viewDir, quatRot);
+    glMatrix.vec3.transformQuat(up, up, quatRot);
+    
+    // Airplane Movement
+    glMatrix.vec3.scale(directionVec, viewDir, speed);
+    glMatrix.vec3.negate(directionVec, directionVec);
+    glMatrix.vec3.add(transformVec, transformVec, directionVec);
+}
+
+//----------------------------------------------------------------------------------
+/**
+ * Function defining animation time
+ */
+ function time() {
+    requestAnimationFrame(time);
+     animate();
+     draw();
+ }
 
 //----------------------------------------------------------------------------------
 /**
@@ -329,6 +403,41 @@ function draw() {
   setupBuffers();
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
-  requestAnimationFrame(draw); 
+  eventHandler();
+  time();
+  
 }
 
+//----------------------------------------------------------------------------------
+/**
+ * Handle DOM events.
+ */
+ function eventHandler() {
+    // i.e. handles whether or not fog is on
+    var fogOnDoc = document.getElementById("fogOn");
+    var fogOff = document.getElementById("fogOff");
+    fogOnDoc.onclick = () => { fogOn = true; };
+    fogOff.onclick = () => { fogOn = false; };
+     // handle keys
+     document.onkeydown = handleKeyDown;
+     document.onkeyup = handleKeyUp;
+ }
+
+//----------------------------------------------------------------------------------
+/**
+ * Handle event of key down.
+ */
+ function handleKeyDown(event) {
+     if (event.key == "ArrowRight" || event.key == "ArrowLeft" || event.key == "ArrowDown" || event.key == "ArrowUp") {
+         event.preventDefault();
+     }
+     currentPressedKey[event.key] = true;
+ }
+
+//----------------------------------------------------------------------------------
+/**
+ * Handle event of key up.
+ */
+ function handleKeyUp(event) {
+     currentPressedKey[event.key] = false;
+ }
